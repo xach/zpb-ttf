@@ -49,11 +49,8 @@
 ;;; FIXME: move most/all of this stuff into initialize-instance
 ;;;
 
-(defun open-font-loader-from-file (font-file)
-  (let* ((input-stream (open font-file
-                             :direction :input
-                             :element-type '(unsigned-byte 8)))
-         (magic (read-uint32 input-stream)))
+(defun open-font-loader-from-stream (input-stream)
+  (let ((magic (read-uint32 input-stream)))
     (when (/= magic #x00010000 #x74727565)
       (error 'bad-magic
              :location "font header"
@@ -63,7 +60,6 @@
            (font-loader (make-instance 'font-loader
                                        :input-stream input-stream
                                        :table-count table-count)))
-      (arrange-finalization font-loader input-stream)
       ;; skip the unused stuff:
       ;; searchRange, entrySelector, rangeShift
       (read-uint16 input-stream)
@@ -92,12 +88,24 @@
             (make-array (glyph-count font-loader) :initial-element nil))
       font-loader)))
 
+(defun open-font-loader-from-file (thing)
+  (let ((stream (open thing
+                      :direction :input
+                      :element-type '(unsigned-byte 8))))
+    (let ((font-loader (open-font-loader-from-stream stream)))
+      (arrange-finalization font-loader stream)
+      font-loader)))
+
 (defun open-font-loader (thing)
   (typecase thing
     (font-loader
      (unless (open-stream-p (input-stream thing))
        (setf (input-stream thing) (open (input-stream thing))))
      thing)
+    (stream
+     (if (open-stream-p thing)
+         (open-font-loader-from-stream thing)
+         (error "~A is not an open stream" thing)))
     (t
      (open-font-loader-from-file thing))))
 
