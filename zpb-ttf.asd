@@ -6,9 +6,10 @@
 (in-package #:zpb-ttf-system)
 
 (defsystem #:zpb-ttf
-           :version "1.0.2"
+  :version "1.0.2"
   :author "Zach Beane <xach@xach.com>"
   :description "Access TrueType font metrics and outlines from Common Lisp"
+  :license "BSD"
   :components ((:file "package")
                (:file "util"
                       :depends-on ("package"))
