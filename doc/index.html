@@ -172,7 +172,7 @@ href='#do-contour-segments'><tt>DO-CONTOUR-SEGMENTS</tt></a>.
 <a name='sect-dictionary'><h3>The ZPB-TTF Dictionary</h3></a>
 
 <p><a name='open-font-loader'>[Function]</a><br>
-<b>open-font-loader</b> <i>font-file-designator</i> <tt>&amp;key</tt> <i>collection-index</i> => <i>font-loader</i>
+<b>open-font-loader</b> <i>font-file-designator</i> <tt>&amp;key</tt> <i>(collection-index 0)</i> => <i>font-loader</i>
 
 <blockquote>
 Creates and returns a font-loader object from
@@ -192,7 +192,7 @@ Closes any open resources held by <i>font-loader</i>.
 
 
 <p><a name='with-font-loader'>[Macro]</a><br>
-<b>with-font-loader</b> <i>(font-loader font-loader-designator</i> <tt>&amp;key</tt> <i>collection-index)</i> <tt>&body</tt> <i>body</i> =>
+<b>with-font-loader</b> <i>(font-loader font-loader-designator</i> <tt>&amp;key</tt> <i>(collection-index 0))</i> <tt>&body</tt> <i>body</i> =>
 
 <blockquote>
 Performs <i>body</i> with <i>font-loader</i> bound to a font-loader
