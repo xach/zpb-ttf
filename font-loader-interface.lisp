@@ -49,17 +49,51 @@
 ;;; FIXME: move most/all of this stuff into initialize-instance
 ;;;
 
-(defun open-font-loader-from-stream (input-stream)
-  (let ((magic (read-uint32 input-stream)))
-    (when (/= magic #x00010000 #x74727565)
+(defun open-font-loader-from-stream (input-stream &key (collection-index 0))
+  (let ((magic (read-uint32 input-stream))
+        (font-count))
+    (when (/= magic #x00010000 #x74727565 #x74746366)
       (error 'bad-magic
              :location "font header"
-             :expected-values (list #x00010000 #x74727565)
+             :expected-values (list #x00010000 #x74727565 #x74746366)
              :actual-value magic))
+    (when (= magic #x74746366)
+      (let ((version (read-uint32 input-stream)))
+        (check-version "ttc header" version #x00010000 #x00020000)
+        (setf font-count (read-uint32 input-stream))
+        (let* ((offset-table (make-array font-count))
+               (dsig))
+          (when (> collection-index font-count)
+            (error 'unsupported-value
+                   :description "Font index out of range"
+                   :actual-value collection-index
+                   :expected-values (list font-count)))
+          (loop for i below font-count
+                do (setf (aref offset-table i) (read-uint32 input-stream)))
+          (when (= version #x00020000)
+            (let ((flag (read-uint32 input-stream))
+                  (length (read-uint32 input-stream))
+                  (offset (read-uint32 input-stream)))
+              (list flag length offset)
+              (when (= #x44534947 flag)
+                (setf dsig (list length offset)))))
+          ;; seek to font offset table
+          (file-position input-stream (aref offset-table collection-index))
+          (let ((magic2 (read-uint32 input-stream)))
+            (when (/= magic2 #x00010000 #x74727565)
+              (error 'bad-magic
+                     :location "font header"
+                     :expected-values (list #x00010000 #x74727565)
+                     :actual-value magic2))))))
+
     (let* ((table-count (read-uint16 input-stream))
            (font-loader (make-instance 'font-loader
                                        :input-stream input-stream
-                                       :table-count table-count)))
+                                       :table-count table-count
+                                       :collection-font-cont font-count
+                                       :collection-font-index
+                                       (when font-count
+                                         collection-index))))
       ;; skip the unused stuff:
       ;; searchRange, entrySelector, rangeShift
       (read-uint16 input-stream)
@@ -88,35 +122,42 @@
             (make-array (glyph-count font-loader) :initial-element nil))
       font-loader)))
 
-(defun open-font-loader-from-file (thing)
+(defun open-font-loader-from-file (thing &key (collection-index 0))
   (let ((stream (open thing
                       :direction :input
                       :element-type '(unsigned-byte 8))))
-    (let ((font-loader (open-font-loader-from-stream stream)))
+    (let ((font-loader (open-font-loader-from-stream
+                        stream :collection-index collection-index)))
       (arrange-finalization font-loader stream)
       font-loader)))
 
-(defun open-font-loader (thing)
+(defun open-font-loader (thing &key (collection-index 0))
   (typecase thing
     (font-loader
-     (unless (open-stream-p (input-stream thing))
-       (setf (input-stream thing) (open (input-stream thing))))
-     thing)
+     (cond
+       ((= collection-index (collection-font-index thing))
+        (unless (open-stream-p (input-stream thing))
+          (setf (input-stream thing) (open (input-stream thing))))
+        thing)
+       (t
+        (open-font-loader-from-file (input-stream thing)
+                                    :collection-index collection-index))))
     (stream
      (if (open-stream-p thing)
-         (open-font-loader-from-stream thing)
+         (open-font-loader-from-stream thing :collection-index collection-index)
          (error "~A is not an open stream" thing)))
     (t
-     (open-font-loader-from-file thing))))
+     (open-font-loader-from-file thing :collection-index collection-index))))
 
 (defun close-font-loader (loader)
   (close (input-stream loader)))
 
-(defmacro with-font-loader ((loader file) &body body)
+(defmacro with-font-loader ((loader file &key (collection-index 0)) &body body)
   `(let (,loader)
     (unwind-protect
          (progn
-           (setf ,loader (open-font-loader ,file))
+           (setf ,loader (open-font-loader ,file
+                                           :collection-index ,collection-index))
            ,@body)
       (when ,loader
         (close-font-loader ,loader)))))

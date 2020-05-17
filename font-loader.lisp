@@ -65,7 +65,13 @@
    (underline-thickness :accessor underline-thickness :initform 0)
    (postscript-glyph-names :accessor postscript-glyph-names)
    ;; misc
-   (glyph-cache :accessor glyph-cache)))
+   (glyph-cache :accessor glyph-cache)
+   ;; # of fonts in collection, if loaded from a ttc file
+   (collection-font-count :reader collection-font-count :initform nil
+                          :initarg :collection-font-cont)
+   ;; index of font in collection, if loaded from a ttc file
+   (collection-font-index :reader collection-font-index :initform nil
+                          :initarg :collection-font-index)))
 
 (defclass table-info ()
   ((name :initarg :name :reader name)

@@ -44,6 +44,8 @@ The latest version is 1.0.3, released on July 18th, 2013.
 <li> <a href='#close-font-loader'><tt>close-font-loader</tt></a>
 <li> <a href='#with-font-loader'><tt>with-font-loader</tt></a>
 <li> <a href='#glyph-count'><tt>glyph-count</tt></a>
+<li> <a href='#collection-font-count'><tt>collection-font-count</tt></a>
+<li> <a href='#collection-font-index'><tt>collection-font-index</tt></a>
 <li> <a href='#name-entry-value'><tt>name-entry-value</tt></a>
 <li> <a href='#find-name-entry'><tt>find-name-entry</tt></a>
 <li> <a href='#value'><tt>value</tt></a>
@@ -170,12 +172,14 @@ href='#do-contour-segments'><tt>DO-CONTOUR-SEGMENTS</tt></a>.
 <a name='sect-dictionary'><h3>The ZPB-TTF Dictionary</h3></a>
 
 <p><a name='open-font-loader'>[Function]</a><br>
-<b>open-font-loader</b> <i>font-file-designator</i> => <i>font-loader</i>
+<b>open-font-loader</b> <i>font-file-designator</i> <tt>&amp;key</tt> <i>(collection-index 0)</i> => <i>font-loader</i>
 
 <blockquote>
 Creates and returns a font-loader object from
 <i>font-file-designator</i>, which should be either a pathname,
-pathname namestring, a stream, or a font-loader object.
+pathname namestring, a stream, or a font-loader object. If
+<i>font-file-designator</i> is a TrueType Collection, <i>collection-index</i>
+specifies the index of the font to load from the collection.
 </blockquote>
 
 
@@ -188,7 +192,7 @@ Closes any open resources held by <i>font-loader</i>.
 
 
 <p><a name='with-font-loader'>[Macro]</a><br>
-<b>with-font-loader</b> <i>(font-loader font-loader-designator)</i> <tt>&body</tt> <i>body</i> =>
+<b>with-font-loader</b> <i>(font-loader font-loader-designator</i> <tt>&amp;key</tt> <i>(collection-index 0))</i> <tt>&body</tt> <i>body</i> =>
 
 <blockquote>
 Performs <i>body</i> with <i>font-loader</i> bound to a font-loader
@@ -203,6 +207,24 @@ font-loader when finished.
 
 <blockquote>
 Returns the number of glyphs available in <i>font-loader</i>.
+</blockquote>
+
+
+<p><a name="collection-font-count">[Function]</a><br>
+<b>collection-font-count</b> <i>font-loader</i> => <i>number</i>
+
+<blockquote>
+If <i>font-loader</i> was loaded from a TrueType Collection, returns
+the number of fonts available in the collection, otherwise returns
+NIL.
+</blockquote>
+
+<p><a name="collection-font-index">[Function]</a><br>
+<b>collection-font-index</b> <i>font-loader</i> => <i>number</i>
+
+<blockquote>
+If <i>font-loader</i> was loaded from a TrueType Collection, returns
+the index of the loaded font in the collection, otherwise returns NIL.
 </blockquote>
 
 
