@@ -128,4 +128,11 @@ named by TAG."
 
 (defmethod seek-to-table ((tag string) (font-loader font-loader))
   "Move FONT-LOADER's input stream to the start of the table named by TAG."
-  (file-position (input-stream font-loader) (table-position tag font-loader)))
+  (let ((table-info (table-info tag font-loader)))
+    (if table-info
+        (seek-to-table table-info font-loader)
+        (error "No such table -- ~A" tag))))
+
+(defmethod seek-to-table ((table table-info) (font-loader font-loader))
+  "Move FONT-LOADER's input stream to the start of TABLE."
+  (file-position (input-stream font-loader) (offset table)))

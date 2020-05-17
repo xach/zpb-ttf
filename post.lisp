@@ -237,48 +237,53 @@
     "ccaron"
     "dcroat"))
 
-(defun load-post-format-2 (names stream)
-  (let* ((glyph-count (read-uint16 stream))
-         (new-count glyph-count))
-    (when (/= glyph-count (length names))
+(defun load-post-format-2 (names stream size-without-header)
+  (let* ((standard-names *standard-mac-glyph-names*)
+         (name-count (length names))
+         (glyph-count (read-uint16 stream)))
+    (when (/= glyph-count name-count)
       (warn "Glyph count in \"post\" table (~D) ~
              does not match glyph count in \"maxp\" table (~D). ~
              This font may be broken."
-            glyph-count (length names))
-      (setf glyph-count (length names)
-            new-count (length names)))
+            glyph-count name-count)
+      (setf glyph-count name-count))
     ;; This is done in a couple passes. First, initialize the names
     ;; tables with indexes into either the standard table or the
-    ;; pstring table. Next, read the pstring table into a vector.
-    ;; Finally, replace the indexes with names.
+    ;; pstring table.
     (dotimes (i glyph-count)
-      (let ((name-index (read-uint16 stream)))
-        (when (< name-index 258)
-          (decf new-count))
-        (setf (aref names i) name-index)))
-    (let ((pstrings (make-array new-count)))
-      (dotimes (i new-count)
-        (setf (aref pstrings i) (read-pstring stream)))
+      (setf (aref names i) (read-uint16 stream)))
+    ;; Next, read the pstring table into a vector.
+    ;; We can't know the number of extended glyph names in advance but
+    ;; GLYPH-COUNT should be enough in many cases. Note that we cannot
+    ;; compute the number of extended glyph names from the indices
+    ;; preceding the indices might not reference all names.
+    (let ((pstrings (make-array glyph-count :adjustable t :fill-pointer 0)))
+      (loop with position = (+ 2 (* 2 glyph-count))
+            for i from 0
+            while (< position size-without-header)
+            do (let ((string (read-pstring stream)))
+                 (vector-push-extend string pstrings)
+                 (incf position (1+ (length string)))))
+      ;; Finally, replace the indexes with names.
       (loop for i below glyph-count
-            for j across names
-            do
-            (cond ((< j 258)
-                   (setf (aref names i)
-                         (aref *standard-mac-glyph-names* j)))
-                  (t
-                   (setf (aref names i)
-                         (aref pstrings (- j 258)))))))))
+            for name-index across names
+            do (setf (aref names i)
+                     (if (< name-index 258)
+                         (aref standard-names name-index)
+                         (aref pstrings (- name-index 258))))))))
 
 (defun load-post-format-3 (names stream)
   (declare (ignore stream))
   (fill names nil))
 
 (defmethod load-post-info ((font-loader font-loader))
-  (let ((names (make-array (glyph-count font-loader)
-                           :initial-element 0))
-        (stream (input-stream font-loader)))
-    (seek-to-table "post" font-loader)
-    (let ((format (read-uint32 stream)))
+  (let* ((names (make-array (glyph-count font-loader)
+                            :initial-element 0))
+         (stream (input-stream font-loader))
+         (table-info (table-info "post" font-loader)))
+    (seek-to-table table-info font-loader)
+    (let ((format (read-uint32 stream))
+          (header-size 16))
       (when (/= format #x00020000 #x00030000)
         (error 'unsupported-format
                :location "\"post\" table"
@@ -290,11 +295,12 @@
             (fixed-pitch-p font-loader) (plusp (read-uint32 stream))
             (postscript-glyph-names font-loader) names)
       ;; skip minMemType* fields
-      (advance-file-position stream 16)
+      (advance-file-position stream header-size)
       (case format
-        (#x00020000 (load-post-format-2 names stream))
+        (#x00020000 (load-post-format-2
+                     names stream (- (size table-info) header-size)))
         (#x00030000 (load-post-format-3 names stream))))))
-        
+
 (defun postscript-uni-name-p (name)
   (let ((end (or (position #\. name) (length name))))
     (and (= end 7)
