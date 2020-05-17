@@ -17,11 +17,11 @@ pre { background: #DDD; padding: 0.25em }
 <p>TrueType fonts have a <a
 href="http://developer.apple.com/fonts/TTRefMan/RM06/Chap6.html">publicly</a>
 <a
-href="http://www.microsoft.com/OpenType/OTSpec/otff.htm">documented</a>
+href="https://docs.microsoft.com/en-us/typography/opentype/spec/">documented</a>
 file format. ZPB-TTF is a TrueType file parser that provides an
 interface for reading typographic metrics, glyph outlines, and other
 information from the file. It is available under a BSD-like
-license. 
+license.
 
 The latest version is 1.0.3, released on July 18th, 2013.
 
@@ -631,11 +631,11 @@ each other.
 
 <p><a name='string-bounding-box'>[Function]</a><br>
 <b>string-bounding-box</b> <i>string</i> <i>font-loader</i>
- <tt>&amp;key</tt> (<i>kerning</i> <tt><i>t</i></tt>) => 
+ <tt>&amp;key</tt> (<i>kerning</i> <tt><i>t</i></tt>) =>
 <i>#(xmin ymin xmax ymax)</i>
 
 <blockquote>
-Returns the bounding box for <i>string</i> in the natural unit size of 
+Returns the bounding box for <i>string</i> in the natural unit size of
 <i>font-loader</i>. If <i>kerning</i> is <i>true</i>, the inter-glyph
 spacing will take kerning offsets into account when calculating the
 bounding box.
@@ -646,5 +646,3 @@ bounding box.
 
 <p>Please send bug reports, patches, questions, and any other feedback
 to <a href="mailto:xach@xach.com">Zachary Beane</a>.
-
-
