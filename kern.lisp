@@ -26,7 +26,7 @@
 ;;;
 ;;; "kern" table functions
 ;;;
-;;;   http://www.microsoft.com/OpenType/OTSpec/kern.htm
+;;;   https://docs.microsoft.com/en-us/typography/opentype/spec/kern
 ;;;   http://developer.apple.com/fonts/TTRefMan/RM06/Chap6kern.html
 ;;;
 ;;; $Id: kern.lisp,v 1.8 2006/03/28 14:38:37 xach Exp $
@@ -69,7 +69,7 @@ distance between the pair."
       ;; implements Microsoft's version.
       ;; See:
       ;;  http://developer.apple.com/fonts/TTRefMan/RM06/Chap6kern.html
-      ;;  http://www.microsoft.com/OpenType/OTSpec/kern.htm
+      ;;  https://docs.microsoft.com/en-us/typography/opentype/spec/kern
       (if (zerop version)
           (setf version maybe-version
                 table-count maybe-table-count)

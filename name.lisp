@@ -26,7 +26,7 @@
 ;;;
 ;;; Loading data from the TrueType "name" table.
 ;;;
-;;;   http://www.microsoft.com/OpenType/OTSpec/name.htm
+;;;   https://docs.microsoft.com/en-us/typography/opentype/spec/name
 ;;;   http://developer.apple.com/fonts/TTRefMan/RM06/Chap6name.html
 ;;;
 ;;; $Id: name.lisp,v 1.8 2006/02/18 23:13:43 xach Exp $

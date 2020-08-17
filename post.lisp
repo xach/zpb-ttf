@@ -26,7 +26,7 @@
 ;;;
 ;;; "post" table functions
 ;;;
-;;;   http://www.microsoft.com/OpenType/OTSpec/post.htm
+;;;   https://docs.microsoft.com/en-us/typography/opentype/spec/post
 ;;;   http://developer.apple.com/fonts/TTRefMan/RM06/Chap6post.html
 ;;;
 ;;; $Id: post.lisp,v 1.7 2006/11/09 15:06:16 xach Exp $
