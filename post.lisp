@@ -26,7 +26,7 @@
 ;;;
 ;;; "post" table functions
 ;;;
-;;;   http://www.microsoft.com/OpenType/OTSpec/post.htm
+;;;   https://docs.microsoft.com/en-us/typography/opentype/spec/post
 ;;;   http://developer.apple.com/fonts/TTRefMan/RM06/Chap6post.html
 ;;;
 ;;; $Id: post.lisp,v 1.7 2006/11/09 15:06:16 xach Exp $
@@ -259,7 +259,6 @@
     ;; preceding the indices might not reference all names.
     (let ((pstrings (make-array glyph-count :adjustable t :fill-pointer 0)))
       (loop with position = (+ 2 (* 2 glyph-count))
-            for i from 0
             while (< position size-without-header)
             do (let ((string (read-pstring stream)))
                  (vector-push-extend string pstrings)
@@ -283,7 +282,7 @@
          (table-info (table-info "post" font-loader)))
     (seek-to-table table-info font-loader)
     (let ((format (read-uint32 stream))
-          (header-size 16))
+          (header-size 32))
       (when (/= format #x00020000 #x00030000)
         (error 'unsupported-format
                :location "\"post\" table"
@@ -295,7 +294,7 @@
             (fixed-pitch-p font-loader) (plusp (read-uint32 stream))
             (postscript-glyph-names font-loader) names)
       ;; skip minMemType* fields
-      (advance-file-position stream header-size)
+      (advance-file-position stream (- header-size 16))
       (case format
         (#x00020000 (load-post-format-2
                      names stream (- (size table-info) header-size)))

@@ -26,7 +26,7 @@
 ;;;
 ;;; Loading data from the "maxp" table.
 ;;;
-;;;  http://www.microsoft.com/OpenType/OTSpec/maxp.htm
+;;;  https://docs.microsoft.com/en-us/typography/opentype/spec/maxp
 ;;;  http://developer.apple.com/fonts/TTRefMan/RM06/Chap6maxp.html
 ;;;
 ;;; $Id: maxp.lisp,v 1.3 2006/02/18 23:13:43 xach Exp $

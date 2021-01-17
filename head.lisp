@@ -26,7 +26,7 @@
 ;;;
 ;;; Loading data from the "head" table.
 ;;;
-;;;  http://www.microsoft.com/OpenType/OTSpec/head.htm
+;;;  https://docs.microsoft.com/en-us/typography/opentype/spec/head
 ;;;  http://developer.apple.com/fonts/TTRefMan/RM06/Chap6head.html
 ;;;
 ;;; $Id: head.lisp,v 1.5 2006/02/18 23:13:43 xach Exp $

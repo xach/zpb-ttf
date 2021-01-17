@@ -26,7 +26,7 @@
 ;;;
 ;;; Loading data from the "cmap" table.
 ;;;
-;;;  http://www.microsoft.com/OpenType/OTSpec/cmap.htm
+;;;  https://docs.microsoft.com/en-us/typography/opentype/spec/cmap
 ;;;  http://developer.apple.com/fonts/TTRefMan/RM06/Chap6cmap.html
 ;;;
 ;;; $Id: cmap.lisp,v 1.15 2006/03/23 22:23:32 xach Exp $

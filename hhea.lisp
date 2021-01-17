@@ -26,7 +26,7 @@
 ;;;
 ;;; Loading data from the "hhea" table.
 ;;;
-;;;  http://www.microsoft.com/OpenType/OTSpec/hhea.htm
+;;;  https://docs.microsoft.com/en-us/typography/opentype/spec/hhea
 ;;;  http://developer.apple.com/fonts/TTRefMan/RM06/Chap6hhea.html
 ;;;
 ;;; $Id: hhea.lisp,v 1.4 2006/02/18 23:13:43 xach Exp $

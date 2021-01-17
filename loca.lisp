@@ -26,7 +26,7 @@
 ;;;
 ;;; Loading data from the "loca" table.
 ;;;
-;;;  http://www.microsoft.com/OpenType/OTSpec/loca.htm
+;;;  https://docs.microsoft.com/en-us/typography/opentype/spec/loca
 ;;;  http://developer.apple.com/fonts/TTRefMan/RM06/Chap6loca.html
 ;;;
 ;;; $Id: loca.lisp,v 1.3 2006/02/18 23:13:43 xach Exp $
