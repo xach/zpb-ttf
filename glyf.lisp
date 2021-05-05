@@ -56,6 +56,7 @@
         (contour* (gensym))
         (loop (gensym "LOOP"))
         (body-tag (gensym "BODY"))
+        (done-tag (gensym "DONE"))
         (mid p1)
         (end p2))
     `(let* ((,i 1)
@@ -63,6 +64,8 @@
             (,length (length ,contour*))
             ,stack ,next ,mid ,end)
        (unless (zerop ,length)
+         (unless (on-curve-p (aref ,contour* 0))
+           (setf ,stack (aref ,contour* 0)))
          (flet ((,next-point ()
                   (when (< ,i ,length)
                     (prog1 (aref ,contour* ,i) (incf ,i))))
@@ -77,7 +80,14 @@
               (unless ,next
                 (setf ,mid ,stack
                       ,end (aref ,contour* 0))
-                (go ,body-tag))
+                (cond
+                  ((on-curve-p ,end)
+                   (go ,body-tag))
+                  (,stack
+                   (setf ,mid ,stack
+                         ,end (,midpoint ,stack ,end))
+                   (go ,body-tag))
+                  (t (go ,done-tag))))
               (if (on-curve-p ,next)
                   (setf ,end ,next
                         ,mid ,stack
@@ -92,8 +102,23 @@
               ,body-tag
               ,@body
               (when ,next
-                (go ,loop))))))))
-                               
+                (go ,loop))
+              ,done-tag))))))
+
+(defun start-of-contour (contour)
+  "If first point of a contour is on the curve, return it, otherwise
+find and return previous (possibly implicit) point on the curve."
+  (let ((first (aref contour 0)))
+   (if (on-curve-p first)
+       first
+       (let ((last (aref contour (1- (length contour)))))
+         (if (on-curve-p last)
+             last
+             ;; both are off curve, return the implicit on-curve point
+             (make-control-point (/ (+ (x first) (x last)) 2)
+                                 (/ (+ (y first) (y last)) 2)
+                                 t))))))
+
 (defmacro do-contour-segments ((p0 p1 p2) contour &body body)
     "A contour is made up of segments. A segment may be a straight line
 or a curve. For each segment, bind the P0 and P2 variables to the
@@ -104,7 +129,7 @@ to the control point of the curve, otherwise set P1 to NIL."
           (contour* (gensym "CONTOUR")))
       `(let ((,contour* ,contour))
          (when (plusp (length ,contour*))
-           (let ((,start (aref ,contour* 0)))
+           (let ((,start (start-of-contour ,contour*)))
              (do-contour-segments* (,p1 ,p2)
                  ,contour*
                (progn ,@body)
@@ -114,13 +139,15 @@ to the control point of the curve, otherwise set P1 to NIL."
   (let ((new-contour (make-array (length contour)
                                  :adjustable t
                                  :fill-pointer 0)))
-    (when (plusp (length contour))
+    (when (and (plusp (length contour))
+               (on-curve-p (aref contour 0)))
       (vector-push-extend (aref contour 0) new-contour))
     (do-contour-segments* (p1 p2)
         contour
       (when p1
         (vector-push-extend p1 new-contour))
-      (vector-push-extend p2 new-contour))
+      (unless (eql p2 (aref contour 0))
+        (vector-push-extend p2 new-contour)))
     new-contour))
 
 
