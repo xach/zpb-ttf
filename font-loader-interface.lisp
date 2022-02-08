@@ -125,7 +125,8 @@
 (defun open-font-loader-from-file (thing &key (collection-index 0))
   (let ((stream (open thing
                       :direction :input
-                      :element-type '(unsigned-byte 8))))
+                      :element-type '(unsigned-byte 8)
+                      #+ccl :sharing #+ccl :external)))
     (let ((font-loader (open-font-loader-from-stream
                         stream :collection-index collection-index)))
       (arrange-finalization font-loader stream)
