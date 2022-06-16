@@ -230,8 +230,9 @@ FONT-LOADER, if present, otherwise NIL.")
 
 (defmethod load-cmap-info ((font-loader font-loader))
   (or (%load-cmap-info font-loader +unicode-platform-id+
-                       +unicode-2.0-encoding-id+) ;; full unicode
-      (%load-cmap-info font-loader +microsoft-platform-id+ 10) ;; full unicode
+                       +unicode-2.0-full-encoding-id+) ;; full unicode
+      (%load-cmap-info font-loader +microsoft-platform-id+
+                       +microsoft-unicode-ucs4-encoding-id+) ;; full unicode
       (%load-cmap-info font-loader +microsoft-platform-id+
                        +microsoft-unicode-bmp-encoding-id+) ;; bmp
       (%load-cmap-info font-loader +unicode-platform-id+
