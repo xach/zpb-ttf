@@ -50,10 +50,45 @@
    (id-range-offsets :initarg :id-range-offsets :reader id-range-offsets)
    (glyph-indexes :initarg :glyph-indexes :accessor glyph-indexes)))
 
+(defclass format-12-cmap ()
+  ((group-count :initarg :group-count :reader group-count)
+   (start-codes :initarg :start-codes :reader start-codes)
+   (end-codes :initarg :end-codes :reader end-codes)
+   (glyph-starts :initarg :glyph-starts :accessor glyph-starts)))
+
+(defun load-unicode-cmap-format12 (stream)
+  "Load a Unicode character map of type 12 from STREAM starting at the
+current offset. Assumes format is already read and checked."
+  (let* ((reserved (read-uint16 stream))
+         (subtable-length (read-uint32 stream))
+         (language-code (read-uint32 stream))
+         (group-count (read-uint32 stream))
+         (start-codes (make-array group-count
+                                  :element-type '(unsigned-byte 32)
+                                  :initial-element 0))
+         (end-codes (make-array group-count
+                                :element-type '(unsigned-byte 32)
+                                :initial-element 0))
+         (glyph-starts (make-array group-count
+                                   :element-type '(unsigned-byte 32)
+                                   :initial-element 0)))
+    (declare (ignore reserved language-code subtable-length))
+    (loop for i below group-count
+          do (setf (aref start-codes i) (read-uint32 stream)
+                   (aref end-codes i) (read-uint32 stream)
+                   (aref glyph-starts i) (read-uint32 stream)))
+    (make-instance 'format-12-cmap
+                   :group-count group-count
+                   :start-codes start-codes
+                   :end-codes end-codes
+                   :glyph-starts glyph-starts)))
+
 (defun load-unicode-cmap (stream)
-  "Load a Unicode character map of type 4 from STREAM starting at the
-current offset."
+  "Load a Unicode character map of type 4 or 12 from STREAM starting at
+the current offset."
   (let ((format (read-uint16 stream)))
+    (when (= format 12)
+      (return-from load-unicode-cmap (load-unicode-cmap-format12 stream)))
     (when (/= format 4)
       (error 'unsupported-format
              :location "\"cmap\" subtable"
@@ -97,16 +132,60 @@ current offset."
                        :id-range-offsets id-range-offsets
                        :glyph-indexes (make-and-load-array glyph-index-array-size))))))
 
+(defgeneric code-point-font-index-from-cmap (code-point cmap)
+  (:documentation "Return the index of the Unicode CODE-POINT in
+CMAP, if present, otherwise NIL.")
+  (:method (code-point (cmap unicode-cmap))
+    (with-slots (end-codes start-codes
+                 id-deltas id-range-offsets
+                 glyph-indexes)
+        cmap
+      (declare (type cmap-value-table
+                     end-codes start-codes
+                     id-range-offsets
+                     glyph-indexes))
+      (dotimes (i (segment-count cmap) 1)
+        (when (<= code-point (aref end-codes i))
+          (return
+            (let ((start-code (aref start-codes i))
+                  (id-range-offset (aref id-range-offsets i))
+                  (id-delta (aref id-deltas i)))
+              (cond ((< code-point start-code)
+                     0)
+                    ((zerop id-range-offset)
+                     (logand #xFFFF (+ code-point id-delta)))
+                    (t
+                     (let* ((glyph-index-offset (- (+ i
+                                                      (ash id-range-offset -1)
+                                                      (- code-point start-code))
+                                                   (segment-count cmap)))
+                            (glyph-index (aref (glyph-indexes cmap)
+                                               glyph-index-offset)))
+                       (logand #xFFFF
+                               (+ glyph-index id-delta)))))))))))
+  (:method (code-point (cmap format-12-cmap))
+    (with-slots (end-codes start-codes glyph-starts)
+        cmap
+      (declare (type (simple-array (unsigned-byte 32))
+                     end-codes start-codes glyph-starts))
+      (dotimes (i (group-count cmap) 1)
+        (when (<= code-point (aref end-codes i))
+          (return
+            (let ((start-code (aref start-codes i))
+                  (start-glyph-id (aref glyph-starts i)))
+              (if (< code-point start-code)
+                  0
+                  (+ start-glyph-id (- code-point start-code))))))))))
 
 (defmethod invert-character-map (font-loader)
   "Return a vector mapping font indexes to code points."
   (with-slots (start-codes end-codes)
       (character-map font-loader)
-    (declare (type cmap-value-table start-codes end-codes))
-    (let ((points (make-array (glyph-count font-loader) :initial-element -1)))
-      (dotimes (i (1- (length end-codes)) points)
+    (let ((points (make-array (glyph-count font-loader) :initial-element -1))
+          (cmap (character-map font-loader)))
+      (dotimes (i (length end-codes) points)
         (loop for j from (aref start-codes i) to (aref end-codes i)
-              for font-index = (code-point-font-index j font-loader)
+              for font-index = (code-point-font-index-from-cmap j cmap)
               when (minusp (svref points font-index)) do
               (setf (svref points font-index) j))))))
 
@@ -115,34 +194,7 @@ current offset."
   (:documentation "Return the index of the Unicode CODE-POINT in
 FONT-LOADER, if present, otherwise NIL.")
   (:method (code-point font-loader)
-    (let ((cmap (character-map font-loader)))
-      (with-slots (end-codes start-codes
-                   id-deltas id-range-offsets
-                   glyph-indexes)
-          cmap
-        (declare (type cmap-value-table
-                       end-codes start-codes
-                       id-range-offsets
-                       glyph-indexes))
-        (dotimes (i (segment-count cmap) 1)
-          (when (<= code-point (aref end-codes i))
-            (return
-              (let ((start-code (aref start-codes i))
-                    (id-range-offset (aref id-range-offsets i))
-                    (id-delta (aref id-deltas i)))
-                (cond ((< code-point start-code)
-                       0)
-                      ((zerop id-range-offset)
-                       (logand #xFFFF (+ code-point id-delta)))
-                      (t
-                       (let* ((glyph-index-offset (- (+ i
-                                                        (ash id-range-offset -1)
-                                                        (- code-point start-code))
-                                                     (segment-count cmap)))
-                              (glyph-index (aref (glyph-indexes cmap)
-                                                 glyph-index-offset)))
-                         (logand #xFFFF
-                                 (+ glyph-index id-delta)))))))))))))
+    (code-point-font-index-from-cmap code-point (character-map font-loader))))
 
 (defgeneric font-index-code-point (glyph-index font-loader)
   (:documentation "Return the code-point for a given glyph index.")
@@ -152,7 +204,7 @@ FONT-LOADER, if present, otherwise NIL.")
           point
           0))))
 
-(defmethod load-cmap-info ((font-loader font-loader))
+(defun %load-cmap-info (font-loader platform specific)
   (seek-to-table "cmap" font-loader)
   (with-slots (input-stream)
       font-loader
@@ -165,10 +217,8 @@ FONT-LOADER, if present, otherwise NIL.")
             for platform-id = (read-uint16 input-stream)
             for platform-specific-id = (read-uint16 input-stream)
             for offset = (+ start-pos (read-uint32 input-stream))
-            when (and (= platform-id
-                         +microsoft-platform-id+)
-                      (= platform-specific-id
-                         +microsoft-unicode-bmp-encoding-id+))
+            when (and (= platform-id platform)
+                      (= platform-specific-id specific))
             do
             (file-position input-stream offset)
             (setf (character-map font-loader) (load-unicode-cmap input-stream))
@@ -176,9 +226,18 @@ FONT-LOADER, if present, otherwise NIL.")
                   (invert-character-map font-loader)
                   foundp t)
             (return))
-      (unless foundp
-        (error "Could not find supported character map in font file")))))
-                   
+      foundp)))
+
+(defmethod load-cmap-info ((font-loader font-loader))
+  (or (%load-cmap-info font-loader +unicode-platform-id+
+                       +unicode-2.0-encoding-id+) ;; full unicode
+      (%load-cmap-info font-loader +microsoft-platform-id+ 10) ;; full unicode
+      (%load-cmap-info font-loader +microsoft-platform-id+
+                       +microsoft-unicode-bmp-encoding-id+) ;; bmp
+      (%load-cmap-info font-loader +unicode-platform-id+
+                       +unicode-2.0-encoding-id+) ;; bmp
+      (error "Could not find supported character map in font file")))
+
 (defun available-character-maps (loader)
   (seek-to-table "cmap" loader)
   (let ((stream (input-stream loader)))

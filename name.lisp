@@ -395,7 +395,9 @@
 (defconstant +custom-platform-id+    4)
 
 (defconstant +unicode-2.0-encoding-id+           3)
+(defconstant +unicode-2.0-full-encoding-id+      4)
 (defconstant +microsoft-unicode-bmp-encoding-id+ 1)
+(defconstant +microsoft-unicode-ucs4-encoding-id+ 10)
 (defconstant +microsoft-symbol-encoding-id+      0)
 (defconstant +macintosh-roman-encoding-id+       1)
 
