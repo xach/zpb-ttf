@@ -73,7 +73,7 @@
           (fraction (logand #x3FFF value)))
       (when (logbitp 1 integer)
         (setf integer (1- (- (logandc2 #b11 integer)))))
-      (+ integer (float (/ fraction #x3FFF))))))
+      (+ integer (float (/ fraction #x4000))))))
 
 (defun read-pstring (stream)
   "Read a Pascal-style length-prefixed string."
