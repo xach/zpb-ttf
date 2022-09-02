@@ -132,50 +132,72 @@ the current offset."
                        :id-range-offsets id-range-offsets
                        :glyph-indexes (make-and-load-array glyph-index-array-size))))))
 
+
+(defun %decode-format-4-cmap-code-point-index (code-point cmap index)
+  "Return the index of the Unicode CODE-POINT in a format 4 CMAP, if
+present, otherwise NIL. Assumes INDEX points to the element of the
+CMAP arrays (END-CODES etc) corresponding to code-point."
+  (with-slots (end-codes start-codes
+               id-deltas id-range-offsets
+               glyph-indexes)
+      cmap
+    (declare (type cmap-value-table
+                   end-codes start-codes
+                   id-range-offsets
+                   glyph-indexes))
+    (let ((start-code (aref start-codes index))
+          (id-range-offset (aref id-range-offsets index))
+          (id-delta (aref id-deltas index)))
+      (cond
+        ((< code-point start-code)
+         0)
+        ((and (= 65535 start-code (aref end-codes index))
+              (= 0 id-range-offsets id-delta))
+         0)
+        ((zerop id-range-offset)
+         (logand #xFFFF (+ code-point id-delta)))
+        (t
+         (let* ((glyph-index-offset (- (+ index
+                                          (ash id-range-offset -1)
+                                          (- code-point start-code))
+                                       (segment-count cmap)))
+                (glyph-index (aref (glyph-indexes cmap)
+                                   glyph-index-offset)))
+           (logand #xFFFF
+                   (+ glyph-index id-delta))))))))
+
+(defun %decode-format-12-cmap-code-point-index (code-point cmap index)
+  "Return the index of the Unicode CODE-POINT in a format 12 CMAP, if
+present, otherwise NIL. Assumes INDEX points to the element of the
+CMAP arrays (END-CODES etc) corresponding to code-point."
+  (with-slots (end-codes start-codes glyph-starts)
+      cmap
+    (declare (type (simple-array (unsigned-byte 32))
+                   end-codes start-codes glyph-starts))
+    (let ((start-code (aref start-codes index))
+          (start-glyph-id (aref glyph-starts index)))
+      (if (< code-point start-code)
+          0
+          (+ start-glyph-id (- code-point start-code))))))
+
 (defgeneric code-point-font-index-from-cmap (code-point cmap)
   (:documentation "Return the index of the Unicode CODE-POINT in
 CMAP, if present, otherwise NIL.")
   (:method (code-point (cmap unicode-cmap))
-    (with-slots (end-codes start-codes
-                 id-deltas id-range-offsets
-                 glyph-indexes)
+    (with-slots (end-codes)
         cmap
-      (declare (type cmap-value-table
-                     end-codes start-codes
-                     id-range-offsets
-                     glyph-indexes))
+      (declare (type cmap-value-table end-codes))
       (dotimes (i (segment-count cmap) 1)
         (when (<= code-point (aref end-codes i))
-          (return
-            (let ((start-code (aref start-codes i))
-                  (id-range-offset (aref id-range-offsets i))
-                  (id-delta (aref id-deltas i)))
-              (cond ((< code-point start-code)
-                     0)
-                    ((zerop id-range-offset)
-                     (logand #xFFFF (+ code-point id-delta)))
-                    (t
-                     (let* ((glyph-index-offset (- (+ i
-                                                      (ash id-range-offset -1)
-                                                      (- code-point start-code))
-                                                   (segment-count cmap)))
-                            (glyph-index (aref (glyph-indexes cmap)
-                                               glyph-index-offset)))
-                       (logand #xFFFF
-                               (+ glyph-index id-delta)))))))))))
+          (return (%decode-format-4-cmap-code-point-index code-point cmap i))))))
   (:method (code-point (cmap format-12-cmap))
-    (with-slots (end-codes start-codes glyph-starts)
+    (with-slots (end-codes)
         cmap
-      (declare (type (simple-array (unsigned-byte 32))
-                     end-codes start-codes glyph-starts))
+      (declare (type (simple-array (unsigned-byte 32)) end-codes))
       (dotimes (i (group-count cmap) 1)
         (when (<= code-point (aref end-codes i))
           (return
-            (let ((start-code (aref start-codes i))
-                  (start-glyph-id (aref glyph-starts i)))
-              (if (< code-point start-code)
-                  0
-                  (+ start-glyph-id (- code-point start-code))))))))))
+            (%decode-format-12-cmap-code-point-index code-point cmap i)))))))
 
 (defmethod invert-character-map (font-loader)
   "Return a vector mapping font indexes to code points."
@@ -185,9 +207,16 @@ CMAP, if present, otherwise NIL.")
           (cmap (character-map font-loader)))
       (dotimes (i (length end-codes) points)
         (loop for j from (aref start-codes i) to (aref end-codes i)
-              for font-index = (code-point-font-index-from-cmap j cmap)
-              when (minusp (svref points font-index)) do
-              (setf (svref points font-index) j))))))
+              for font-index
+                = (typecase cmap
+                    (unicode-cmap
+                     (%decode-format-4-cmap-code-point-index j cmap i))
+                    (format-12-cmap
+                     (%decode-format-12-cmap-code-point-index j cmap i))
+                    (t
+                     (code-point-font-index-from-cmap j cmap)))
+              when (minusp (svref points font-index))
+                do (setf (svref points font-index) j))))))
 
 
 (defgeneric code-point-font-index (code-point font-loader)
