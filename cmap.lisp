@@ -152,7 +152,7 @@ CMAP arrays (END-CODES etc) corresponding to code-point."
         ((< code-point start-code)
          0)
         ((and (= 65535 start-code (aref end-codes index))
-              (= 0 id-range-offsets id-delta))
+              (= 0 id-range-offset id-delta))
          0)
         ((zerop id-range-offset)
          (logand #xFFFF (+ code-point id-delta)))
