@@ -30,7 +30,7 @@
 
 (in-package #:zpb-ttf)
 
-(define-condition regrettable-value ()
+(define-condition regrettable-value (error)
   ((actual-value
     :initarg :actual-value
     :accessor actual-value)
@@ -87,6 +87,13 @@
 (defun check-version (location actual &rest expected)
   (or (member actual expected :test #'=)
       (error 'unsupported-version
+             :location location
+             :actual-value actual
+             :expected-values expected)))
+
+(defun check-magic (location actual &rest expected)
+  (or (member actual expected :test #'=)
+      (error 'bad-magic
              :location location
              :actual-value actual
              :expected-values expected)))
