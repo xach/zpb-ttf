@@ -248,7 +248,9 @@ FONT-LOADER, if present, otherwise NIL.")
             for platform-specific-id = (read-uint16 input-stream)
             for offset = (+ start-pos (read-uint32 input-stream))
             when (and (= platform-id platform)
-                      (= platform-specific-id specific))
+                      (or (eql platform-specific-id specific)
+                          (and (consp specific)
+                               (member platform-specific-id specific))))
             do
             (file-position input-stream offset)
             (setf (character-map font-loader) (load-unicode-cmap input-stream))
@@ -257,6 +259,29 @@ FONT-LOADER, if present, otherwise NIL.")
                   foundp t)
             (return))
       foundp)))
+
+(defun %unknown-cmap-error (font-loader)
+  (seek-to-table "cmap" font-loader)
+  (with-slots (input-stream)
+      font-loader
+    (let ((start-pos (file-position input-stream))
+          (version-number (read-uint16 input-stream))
+          (subtable-count (read-uint16 input-stream))
+          (cmaps nil))
+      (declare (ignore version-number))
+      (loop repeat subtable-count
+            for platform-id = (read-uint16 input-stream)
+            for platform-specific-id = (read-uint16 input-stream)
+            for offset = (+ start-pos (read-uint32 input-stream))
+            for pos = (file-position input-stream)
+            do (file-position input-stream offset)
+               (push (list (platform-id-name platform-id)
+                           (encoding-id-name platform-id platform-specific-id)
+                           :type (read-uint16 input-stream))
+                     cmaps)
+               (file-position input-stream pos))
+      (error "Could not find supported character map in font file~% available cmap tables = ~s"
+             cmaps))))
 
 (defmethod load-cmap-info ((font-loader font-loader))
   (or (%load-cmap-info font-loader +unicode-platform-id+
@@ -267,7 +292,11 @@ FONT-LOADER, if present, otherwise NIL.")
                        +microsoft-unicode-bmp-encoding-id+) ;; bmp
       (%load-cmap-info font-loader +unicode-platform-id+
                        +unicode-2.0-encoding-id+) ;; bmp
-      (error "Could not find supported character map in font file")))
+      (%load-cmap-info font-loader +unicode-platform-id+
+                       '(0 1 2 3 4)) ;; all except variation and last-resort
+      (%load-cmap-info font-loader +microsoft-platform-id+
+                       +microsoft-symbol-encoding-id+) ;; ms symbol
+      (%unknown-cmap-error font-loader)))
 
 (defun available-character-maps (loader)
   (seek-to-table "cmap" loader)

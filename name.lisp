@@ -77,9 +77,9 @@
     :big5
     :wansung
     :johab
-    :reserved
-    :reserved
-    :reserved
+    :7-reserved
+    :8-reserved
+    :9-reserved
     :ucs-4))
 
 (defvar *macintosh-encoding-ids*
@@ -117,18 +117,29 @@
     :sindhi
     :uninterpreted))
 
+(defvar *iso-encoding-ids*
+  #(:7-bit-ascii
+    :iso-10646
+    :iso-8859-1))
+
 (defparameter *encoding-tables*
   (vector *unicode-encoding-ids*
           *macintosh-encoding-ids*
-          nil
+          *iso-encoding-ids*
           *microsoft-encoding-ids*
           nil))
 
 (defun encoding-id-name (platform-id encoding-id)
-  (aref (aref *encoding-tables* platform-id) encoding-id))
+  (if (and (array-in-bounds-p *encoding-tables* platform-id)
+           (aref *encoding-tables* platform-id)
+           (array-in-bounds-p (aref *encoding-tables* platform-id) encoding-id))
+      (aref (aref *encoding-tables* platform-id) encoding-id)
+      encoding-id))
 
 (defun platform-id-name (platform-id)
-  (aref *platform-identifiers* platform-id))
+  (if (array-in-bounds-p *platform-identifiers* platform-id)
+      (aref *platform-identifiers* platform-id)
+      platform-id))
 
 (defparameter *macroman-translation-table*
   #(#x00 #x00
