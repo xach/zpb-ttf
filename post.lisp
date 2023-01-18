@@ -245,8 +245,7 @@
       (warn "Glyph count in \"post\" table (~D) ~
              does not match glyph count in \"maxp\" table (~D). ~
              This font may be broken."
-            glyph-count name-count)
-      (setf glyph-count name-count))
+            glyph-count name-count))
     ;; This is done in a couple passes. First, initialize the names
     ;; tables with indexes into either the standard table or the
     ;; pstring table.
