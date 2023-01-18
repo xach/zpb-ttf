@@ -146,13 +146,14 @@ CMAP arrays (END-CODES etc) corresponding to code-point."
                    id-range-offsets
                    glyph-indexes))
     (let ((start-code (aref start-codes index))
+          (end-code (aref end-codes index))
           (id-range-offset (aref id-range-offsets index))
           (id-delta (aref id-deltas index)))
       (cond
         ((< code-point start-code)
          0)
-        ((and (= 65535 start-code (aref end-codes index))
-              (= 0 id-range-offset id-delta))
+        ;; ignore empty final segment
+        ((and (= 65535 start-code end-code))
          0)
         ((zerop id-range-offset)
          (logand #xFFFF (+ code-point id-delta)))
