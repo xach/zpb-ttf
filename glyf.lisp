@@ -238,6 +238,8 @@ update the X and Y values of each point."
     (loop
      (let ((flags (read-uint16 stream))
            (font-index (read-uint16 stream)))
+       (when (gethash font-index *compound-contour-loop-check*)
+         (return-from read-compound-contours #()))
        (let ((position (file-position stream))
              (contours (read-contours-at-index font-index loader)))
          (push contours contours-list)
@@ -343,9 +345,19 @@ box, read the contours data from STREAM and return it as a vector."
                          (subseq control-points start (1+ end))))
           contours)))))
 
+(defvar *compound-contour-loop-check*)
+(defmacro with-compound-contour-loop (() &body body)
+  `(let ((*compound-contour-loop-check*
+           (if (boundp '*compound-contour-loop-check*)
+               *compound-contour-loop-check*
+               (make-hash-table))))
+     ,@body))
+
 (defun read-contours-at-index (index loader)
   "Read the contours at glyph index INDEX, discarding bounding box
 information."
+  (when (boundp '*compound-contour-loop-check*)
+    (setf (gethash index *compound-contour-loop-check*) t))
   (let ((stream (input-stream loader)))
     (file-position stream (+ (table-position "glyf" loader)
                              (glyph-location index loader)))
@@ -356,5 +368,6 @@ information."
           (ymax (read-int16 stream)))
       (declare (ignore xmin ymin xmax ymax))
       (if (= contour-count -1)
-          (read-compound-contours loader)
+          (with-compound-contour-loop ()
+            (read-compound-contours loader))
           (read-simple-contours contour-count stream)))))

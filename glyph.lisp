@@ -159,7 +159,7 @@ to look up information in various structures in the truetype file.")
                       (read-fword stream)
                       (read-fword stream)
                       (read-fword stream))))))
-  
+
 (defmethod initialize-contours ((glyph glyph))
   (if (zerop (data-size glyph))
       (setf (contours glyph) (empty-contours))
@@ -170,7 +170,8 @@ to look up information in various structures in the truetype file.")
           (advance-file-position stream 8)
           (if (= contour-count -1)
               (setf (contours glyph)
-                    (read-compound-contours (font-loader glyph)))
+                    (with-compound-contour-loop ()
+                      (read-compound-contours (font-loader glyph))))
               (setf (contours glyph)
                     (read-simple-contours contour-count stream)))))))
 
