@@ -136,7 +136,10 @@
   (typecase thing
     (font-loader
      (cond
-       ((= collection-index (collection-font-index thing))
+       ;; We either don't have a collection, or want same font from
+       ;; collection.
+       ((or (not (collection-font-index thing))
+            (= collection-index (collection-font-index thing)))
         (unless (open-stream-p (input-stream thing))
           (setf (input-stream thing) (open (input-stream thing))))
         thing)
