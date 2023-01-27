@@ -45,6 +45,27 @@
     (excl:schedule-finalization object #'quietly-close)))
     
 
+(defun check-magic (magic &rest ok)
+  (cond
+    ((member magic ok)
+     t)
+    ((= magic (tag->number "typ1"))
+     (error 'unsupported-format
+            :location "font header"
+            :description "Old style of PostScript font housed in a sfnt wrapper not supported."
+            :actual-value magic
+            :expected-values ok))
+    ((= magic (tag->number "OTTO"))
+     (error 'unsupported-format
+            :location "font header"
+            :description "OpenType font with PostScript outlines not supported."
+            :actual-value magic
+            :expected-values ok))
+    (t
+     (error 'bad-magic
+            :location "font header"
+            :expected-values ok
+            :actual-value magic))))
 ;;;
 ;;; FIXME: move most/all of this stuff into initialize-instance
 ;;;
@@ -52,12 +73,10 @@
 (defun open-font-loader-from-stream (input-stream &key (collection-index 0))
   (let ((magic (read-uint32 input-stream))
         (font-count))
-    (when (/= magic #x00010000 #x74727565 #x74746366)
-      (error 'bad-magic
-             :location "font header"
-             :expected-values (list #x00010000 #x74727565 #x74746366)
-             :actual-value magic))
-    (when (= magic #x74746366)
+    (check-magic magic #x00010000
+                 (tag->number "true")
+                 (tag->number "ttcf"))
+    (when (= magic (tag->number "ttcf"))
       (let ((version (read-uint32 input-stream)))
         (check-version "ttc header" version #x00010000 #x00020000)
         (setf font-count (read-uint32 input-stream))
@@ -80,11 +99,7 @@
           ;; seek to font offset table
           (file-position input-stream (aref offset-table collection-index))
           (let ((magic2 (read-uint32 input-stream)))
-            (when (/= magic2 #x00010000 #x74727565)
-              (error 'bad-magic
-                     :location "font header"
-                     :expected-values (list #x00010000 #x74727565)
-                     :actual-value magic2))))))
+            (check-magic magic2 #x00010000 (tag->number "true"))))))
 
     (let* ((table-count (read-uint16 input-stream))
            (font-loader (make-instance 'font-loader
@@ -136,7 +151,10 @@
   (typecase thing
     (font-loader
      (cond
-       ((= collection-index (collection-font-index thing))
+       ;; We either don't have a collection, or want same font from
+       ;; collection.
+       ((or (not (collection-font-index thing))
+            (= collection-index (collection-font-index thing)))
         (unless (open-stream-p (input-stream thing))
           (setf (input-stream thing) (open (input-stream thing))))
         thing)
