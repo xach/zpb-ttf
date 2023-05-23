@@ -238,8 +238,6 @@ update the X and Y values of each point."
     (loop
      (let ((flags (read-uint16 stream))
            (font-index (read-uint16 stream)))
-       (when (gethash font-index *compound-contour-loop-check*)
-         (return-from read-compound-contours #()))
        (let ((position (file-position stream))
              (contours (read-contours-at-index font-index loader)))
          (push contours contours-list)
@@ -356,8 +354,6 @@ box, read the contours data from STREAM and return it as a vector."
 (defun read-contours-at-index (index loader)
   "Read the contours at glyph index INDEX, discarding bounding box
 information."
-  (when (boundp '*compound-contour-loop-check*)
-    (setf (gethash index *compound-contour-loop-check*) t))
   (let ((stream (input-stream loader)))
     (file-position stream (+ (table-position "glyf" loader)
                              (glyph-location index loader)))
@@ -369,5 +365,18 @@ information."
       (declare (ignore xmin ymin xmax ymax))
       (if (= contour-count -1)
           (with-compound-contour-loop ()
-            (read-compound-contours loader))
+            ;; some fonts have compound contours that contain
+            ;; themselves, so we try to detect that.
+            (when (gethash index *compound-contour-loop-check*)
+              (return-from read-contours-at-index
+                (gethash index *compound-contour-loop-check*)))
+            ;; store a value for when we detect a loop
+            (setf (gethash index *compound-contour-loop-check*)
+                  #())
+            ;; It is reasonable for a particular contour to be
+            ;; included multiple times within the tree of compounds,
+            ;; though, so for that case we save the value and reuse
+            ;; it.
+            (setf (gethash index *compound-contour-loop-check*)
+                  (read-compound-contours loader)))
           (read-simple-contours contour-count stream)))))
