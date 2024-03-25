@@ -26,8 +26,8 @@
 ;;;
 ;;; Loading data from the "hmtx" table.
 ;;;
-;;;  https://docs.microsoft.com/en-us/typography/opentype/spec/hmtx
-;;;  http://developer.apple.com/fonts/TTRefMan/RM06/Chap6hmtx.html
+;;;  https://learn.microsoft.com/en-us/typography/opentype/spec/hmtx
+;;;  https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6hmtx.html
 ;;;
 ;;; $Id: hmtx.lisp,v 1.3 2006/02/18 23:13:43 xach Exp $
 
