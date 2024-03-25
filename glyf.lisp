@@ -232,6 +232,8 @@ update the X and Y values of each point."
             (setf (aref merged i) contour)
             (incf i)))))
 
+(defvar *compound-contour-loop-check*)
+
 (defun read-compound-contours (loader)
   (let ((contours-list '())
         (stream (input-stream loader)))
@@ -345,7 +347,6 @@ box, read the contours data from STREAM and return it as a vector."
                          (subseq control-points start (1+ end))))
           contours)))))
 
-(defvar *compound-contour-loop-check*)
 (defmacro with-compound-contour-loop (() &body body)
   `(let ((*compound-contour-loop-check*
            (if (boundp '*compound-contour-loop-check*)
