@@ -49,6 +49,8 @@
    #:descender
    #:line-gap
    #:max-width
+   #:vascender
+   #:vdescender
    ;; other font attributes
    #:postscript-name
    #:full-name
@@ -81,7 +83,9 @@
    #:font-index
    ;; glyph typographic
    #:advance-width
+   #:advance-height
    #:left-side-bearing
+   #:top-side-bearing
    #:right-side-bearing
    #:kerning-offset
    #:string-bounding-box))
