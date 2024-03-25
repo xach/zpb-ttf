@@ -1,4 +1,4 @@
-;;; Copyright (c) 2006 Zachary Beane, All Rights Reserved
+;;; Copyright (c) 2024 Daniel Kochmański, All Rights Reserved
 ;;;
 ;;; Redistribution and use in source and binary forms, with or without
 ;;; modification, are permitted provided that the following conditions
@@ -24,28 +24,42 @@
 ;;; NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;;
-;;; Loading data from the "hhea" table.
+;;; Loading data from the "vhea" table.
 ;;;
-;;;  https://learn.microsoft.com/en-us/typography/opentype/spec/hhea
-;;;  https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6hhea.html
+;;;  https://learn.microsoft.com/en-us/typography/opentype/spec/vhea
+;;;  https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6vhea.html
 ;;;
-;;; $Id: hhea.lisp,v 1.4 2006/02/18 23:13:43 xach Exp $
 
 (in-package #:zpb-ttf)
 
-(defmethod load-hhea-info ((font-loader font-loader))
-  (seek-to-table "hhea" font-loader)
-  (with-slots (input-stream ascender descender line-gap max-width)
+;;; Tables 'vhea' and 'vmtx' are not present in some fonts. For that reason we
+;;; have a fallback where metrics are supplanted with default values based on
+;;; horizontal metrics.
+
+(defmethod load-vhea-info ((font-loader font-loader))
+  (unless (table-info "vhea" font-loader)
+    (setf (vhea-missing-p font-loader) t)
+    (let ((dx (/ (max-width font-loader) 2)))
+      (with-slots (vascender vdescender)
+          font-loader
+        (setf vascender dx
+              vdescender (- dx))))
+    (return-from load-vhea-info))
+  (seek-to-table "vhea" font-loader)
+  (with-slots (input-stream vascender vdescender)
       font-loader
     (let ((version (read-fixed input-stream)))
-      (check-version "\"hhea\" table" version #x00010000))
-    (setf ascender (read-fword input-stream)
-          descender (read-fword input-stream)
-          line-gap (read-fword input-stream)
-          max-width (read-ufword input-stream))))
+      (check-version "\"vhea\" table" version #x00010000 #x00011000))
+    (setf vascender (read-fword input-stream)
+          vdescender (read-fword input-stream))))
 
-(defmethod horizontal-metrics-count ((font-loader font-loader))
-  (seek-to-table "hhea" font-loader)
+(defmethod vertical-metrics-count ((font-loader font-loader))
+  (when (or (vhea-missing-p font-loader)
+            (null (table-info "vhea" font-loader)))
+    ;; (warn "Table 'vhea' is missing.")
+    (setf (vhea-missing-p font-loader) t)
+    (return-from vertical-metrics-count))
+  (seek-to-table "vhea" font-loader)
   (with-slots (input-stream) font-loader
     ;; Skip to the end, since all we care about is the last item
     (advance-file-position input-stream 34)

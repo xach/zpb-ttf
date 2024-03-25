@@ -133,6 +133,8 @@
       (load-post-info font-loader)
       (load-hhea-info font-loader)
       (load-hmtx-info font-loader)
+      (load-vhea-info font-loader)
+      (load-vmtx-info font-loader)
       (setf (glyph-cache font-loader)
             (make-array (glyph-count font-loader) :initial-element nil))
       font-loader)))
