@@ -51,6 +51,7 @@
    (ascender :accessor ascender)
    (descender :accessor descender)
    (line-gap :accessor line-gap)
+   (max-width :accessor max-width)
    ;; from the 'hmtx' table
    (advance-widths :accessor advance-widths)
    (left-side-bearings :accessor left-side-bearings)

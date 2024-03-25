@@ -48,6 +48,7 @@
    #:ascender
    #:descender
    #:line-gap
+   #:max-width
    ;; other font attributes
    #:postscript-name
    #:full-name

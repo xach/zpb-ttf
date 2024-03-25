@@ -35,13 +35,14 @@
 
 (defmethod load-hhea-info ((font-loader font-loader))
   (seek-to-table "hhea" font-loader)
-  (with-slots (input-stream ascender descender line-gap)
+  (with-slots (input-stream ascender descender line-gap max-width)
       font-loader
     (let ((version (read-fixed input-stream)))
       (check-version "\"hhea\" table" version #x00010000))
     (setf ascender (read-fword input-stream)
           descender (read-fword input-stream)
-          line-gap (read-fword input-stream))))
+          line-gap (read-fword input-stream)
+          max-width (read-ufword input-stream))))
 
 (defmethod horizontal-metrics-count ((font-loader font-loader))
   (seek-to-table "hhea" font-loader)
