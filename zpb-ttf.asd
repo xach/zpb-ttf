@@ -63,6 +63,16 @@
                                    "util"
                                    "font-loader"
                                    "hhea"))
+               (:file "vhea"
+                      :depends-on ("package"
+                                   "util"
+                                   "font-loader"
+                                   "hhea"))
+               (:file "vmtx"
+                      :depends-on ("package"
+                                   "util"
+                                   "font-loader"
+                                   "vhea"))
                (:file "glyf"
                       :depends-on ("package"
                                    "util"
@@ -89,6 +99,8 @@
                                    "cmap"
                                    "post"
                                    "hhea"
-                                   "hmtx"))))
+                                   "hmtx"
+                                   "vhea"
+                                   "vmtx"))))
 
 

@@ -67,6 +67,9 @@
 (defun read-fword (stream)
   (read-int16 stream))
 
+(defun read-ufword (stream)
+  (read-uint16 stream))
+
 (defun read-fixed2.14 (stream)
   (let ((value (read-uint16 stream)))
     (let ((integer (ash value -14))

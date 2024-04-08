@@ -51,9 +51,18 @@
    (ascender :accessor ascender)
    (descender :accessor descender)
    (line-gap :accessor line-gap)
+   (max-width :accessor max-width)
    ;; from the 'hmtx' table
    (advance-widths :accessor advance-widths)
    (left-side-bearings :accessor left-side-bearings)
+   ;; from the 'vhea' table
+   (vhea-missing-p :initform nil :accessor vhea-missing-p)
+   (vascender :accessor vascender)
+   (vdescender :accessor vascender)
+   ;; from 'vhea' and 'vmtx' tables
+   (vmtx-missing-p :initform nil :accessor vmtx-missing-p)
+   (advance-heights :accessor advance-heights)
+   (top-side-bearings :accessor top-side-bearings)
    ;; from the 'kern' table
    (kerning-table :initform (make-hash-table) :accessor kerning-table)
    ;; from the 'name' table

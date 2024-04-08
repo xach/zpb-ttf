@@ -82,6 +82,8 @@ to look up information in various structures in the truetype file.")
 
 ;;; Glyph-specific values determined from data in the font-loader
 
+;;; Horizontal metrics
+
 (defgeneric left-side-bearing (object)
   (:method ((glyph glyph))
     (bounded-aref (left-side-bearings (font-loader glyph))
@@ -89,6 +91,41 @@ to look up information in various structures in the truetype file.")
 
 (defmethod (setf left-side-bearing) (new-value glyph)
   (setf (bounded-aref (left-side-bearings (font-loader glyph))
+                      (font-index glyph))
+        new-value))
+
+(defgeneric advance-width (object)
+  (:method ((glyph glyph))
+    (bounded-aref (advance-widths (font-loader glyph))
+                  (font-index glyph))))
+
+(defmethod (setf advance-width) (new-value (glyph glyph))
+  (setf (bounded-aref (advance-widths (font-loader glyph))
+                      (font-index glyph))
+        new-value))
+
+;;; Vertical metrics
+
+(defgeneric top-side-bearing (object)
+  (:method ((glyph glyph))
+    (let ((loader (font-loader glyph)))
+      (if (vmtx-missing-p loader)
+          (- (ascender loader) (ymax glyph))
+          (bounded-aref (top-side-bearings (font-loader glyph))
+                        (font-index glyph))))))
+
+(defmethod (setf top-side-bearing) (new-value glyph)
+  (setf (bounded-aref (top-side-bearings (font-loader glyph))
+                      (font-index glyph))
+        new-value))
+
+(defgeneric advance-height (object)
+  (:method ((glyph glyph))
+    (bounded-aref (advance-heights (font-loader glyph))
+                  (font-index glyph))))
+
+(defmethod (setf advance-height) (new-value (glyph glyph))
+  (setf (bounded-aref (advance-heights (font-loader glyph))
                       (font-index glyph))
         new-value))
 
@@ -115,16 +152,6 @@ to look up information in various structures in the truetype file.")
 (defmethod kerning-offset (left (right null) font-loader)
   (declare (ignore left right font-loader))
   0)
-
-(defgeneric advance-width (object)
-  (:method ((glyph glyph))
-    (bounded-aref (advance-widths (font-loader glyph))
-                  (font-index glyph))))
-
-(defmethod (setf advance-width) (new-value (glyph glyph))
-  (setf (bounded-aref (advance-widths (font-loader glyph))
-                      (font-index glyph))
-        new-value))
 
 (defgeneric kerned-advance-width (object next)
   (:method ((object glyph) next)
