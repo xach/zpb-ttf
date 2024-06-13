@@ -58,7 +58,7 @@
    ;; from the 'vhea' table
    (vhea-missing-p :initform nil :accessor vhea-missing-p)
    (vascender :accessor vascender)
-   (vdescender :accessor vascender)
+   (vdescender :accessor vdescender)
    ;; from 'vhea' and 'vmtx' tables
    (vmtx-missing-p :initform nil :accessor vmtx-missing-p)
    (advance-heights :accessor advance-heights)
