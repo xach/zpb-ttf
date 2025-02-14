@@ -30,7 +30,7 @@
 
 (in-package #:zpb-ttf)
 
-(define-condition regrettable-value ()
+(define-condition regrettable-value (error)
   ((actual-value
     :initarg :actual-value
     :accessor actual-value)
@@ -63,7 +63,7 @@
     :reader %actual-value)
    (expected-values
     :reader %expected-values)))
-  
+
 (defmethod actual-value ((c regrettable-hex-value))
   (format nil "#x~v,'0X" (size c) (%actual-value c)))
 

@@ -88,5 +88,11 @@
    #:top-side-bearing
    #:right-side-bearing
    #:kerning-offset
-   #:string-bounding-box))
-
+   #:string-bounding-box
+   ;; conditions
+   #:regrettable-value
+   #:regrettable-hex-value
+   #:bad-magic
+   #:unsupported-version
+   #:unsupported-format
+   #:unsupported-value))
