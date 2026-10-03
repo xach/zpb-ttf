@@ -158,12 +158,14 @@ to look up information in various structures in the truetype file.")
     (+ (advance-width object)
        (kerning-offset object next (font-loader object)))))
 
-(defgeneric location (object)
-  (:method ((glyph glyph))
-    (with-slots (font-index font-loader)
-        glyph
-      (+ (table-position "glyf" font-loader)
-         (glyph-location font-index font-loader)))))
+;;; LOCATION is already a generic function, made by the LOCATION accessor
+;;; of REGRETTABLE-VALUE in conditions.lisp; a DEFGENERIC here would
+;;; redefine it.
+(defmethod location ((glyph glyph))
+  (with-slots (font-index font-loader)
+      glyph
+    (+ (table-position "glyf" font-loader)
+       (glyph-location font-index font-loader))))
 
 (defgeneric data-size (object)
   (:method ((glyph glyph))
