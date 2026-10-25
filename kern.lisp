@@ -135,35 +135,44 @@ distance between the pair."
                 apple-p t))
       (check-version "\"kern\" table" version 0)
       (dotimes (i table-count)
-        (let ((version (read-uint16 stream))
-              (length (read-uint16 stream))
-              (coverage-flags (read-uint8 stream))
-              (format (read-uint8 stream)))
-          (declare (ignorable version))
-          (case coverage-flags
-            ;; only read horizontal kerning, since storing others in
-            ;; same array would be confusing and vertical layouts
-            ;; don't seem to be supported currently
-            (0
-             (when apple-p
-               (read-uint16 stream))    ; read and discard tuple-index
-
-             (let ((bytes-read (+ (load-kerning-subtable font-loader format
-                                                         length)
-                                  (if apple-p 8 6))))
-               (advance-file-position stream (- length bytes-read))))
-            ;; ignore other known types of kerning
-            ((#x8000  ;; vertical
-              #x4000  ;; cross stream
-              #x2000) ;; variation
-             (advance-file-position stream (- length 6)))
-            ;; otherwise error
-            (otherwise
-             (error 'unsupported-format
-                    :description "kerning subtable coverage"
-                    :size 2
-                    :expected-values (list 0 #x2000 #x4000 #x8000)
-                    :actual-value coverage-flags))))))))
+        ;; Each subtable starts with a header whose coverage field says
+        ;; which format the subtable is in and what kind of kerning it
+        ;; holds.  Microsoft and Apple put its two bytes in opposite
+        ;; orders, and their headers differ in size.
+        (multiple-value-bind (length format horizontal-p header-size)
+            (if apple-p
+                ;; Apple: a 32-bit length; coverage with the flags in the
+                ;; high byte (#x80 vertical, #x40 cross-stream, #x20
+                ;; variation) and the format in the low byte; a tuple
+                ;; index.
+                (let* ((length (read-uint32 stream))
+                       (flags (read-uint8 stream))
+                       (format (read-uint8 stream)))
+                  (read-uint16 stream)  ; tuple index
+                  (values length format (zerop (logand flags #xE0)) 8))
+                ;; Microsoft: a version and a 16-bit length; coverage
+                ;; with the format in the high byte and the flags in the
+                ;; low byte (bit 0 horizontal, bit 1 minimum values, bit
+                ;; 2 cross-stream).
+                (let* ((version (read-uint16 stream))
+                       (length (read-uint16 stream))
+                       (format (read-uint8 stream))
+                       (flags (read-uint8 stream)))
+                  (declare (ignore version))
+                  (values length format (= (logand flags #b111) 1) 6)))
+          ;; Only horizontal kerning is read: storing other kinds in the
+          ;; same table would be confusing, and vertical layout is not
+          ;; supported.
+          (let ((bytes-read (if horizontal-p
+                                (+ (load-kerning-subtable font-loader format
+                                                          length)
+                                   header-size)
+                                header-size)))
+            ;; A Microsoft subtable's length is 16 bits, too small for a
+            ;; subtable of more than 10920 pairs, so fonts with one store
+            ;; it modulo 65536; the pairs read are then all there is.
+            (when (> length bytes-read)
+              (advance-file-position stream (- length bytes-read)))))))))
 
 (defmethod all-kerning-pairs ((font-loader font-loader))
   (let ((pairs nil))
