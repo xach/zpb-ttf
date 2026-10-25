@@ -1,4 +1,6 @@
-;; $Id: zpb-ttf.asd,v 1.5 2006/03/24 20:47:27 xach Exp $
+;;;; zpb-ttf.asd — Access TrueType and OpenType font metrics and outlines
+;;;; Copyright (c) 2006 Zachary Beane, 2026 Arthur Miller and contributors
+;;;; SPDX-License-Identifier: BSD-2-Clause
 
 (defpackage #:zpb-ttf-system
   (:use #:cl #:asdf))
@@ -6,101 +8,18 @@
 (in-package #:zpb-ttf-system)
 
 (defsystem #:zpb-ttf
-  :version "1.0.6"
-  :author "Zach Beane <xach@xach.com>"
-  :description "Access TrueType font metrics and outlines from Common Lisp"
-  :license "BSD"
-  :components ((:file "package")
-               (:file "util"
-                      :depends-on ("package"))
-               (:file "conditions"
-                      :depends-on ("package"))
-               (:file "bounding-box"
-                      :depends-on ("package"))
-               (:file "font-loader"
-                      :depends-on ("package"
-                                   "util"
-                                   "bounding-box"))
-               (:file "maxp"
-                      :depends-on ("package"
-                                   "util"
-                                   "font-loader"))
-               (:file "head"
-                      :depends-on ("package"
-                                   "util"
-                                   "conditions"
-                                   "font-loader"))
-               (:file "kern"
-                      :depends-on ("package"
-                                   "util"
-                                   "conditions"
-                                   "font-loader"))
-               (:file "loca"
-                      :depends-on ("package"
-                                   "util"
-                                   "font-loader"))
-               (:file "name"
-                      :depends-on ("package"
-                                   "util"
-                                   "conditions"
-                                   "font-loader"))
-               (:file "cmap"
-                      :depends-on ("package"
-                                   "util"
-                                   "name"
-                                   "font-loader"))
-               (:file "post"
-                      :depends-on ("package"
-                                   "util"
-                                   "conditions"
-                                   "font-loader"))
-               (:file "hhea"
-                      :depends-on ("package"
-                                   "util"
-                                   "font-loader"))
-               (:file "hmtx"
-                      :depends-on ("package"
-                                   "util"
-                                   "font-loader"
-                                   "hhea"))
-               (:file "vhea"
-                      :depends-on ("package"
-                                   "util"
-                                   "font-loader"
-                                   "hhea"))
-               (:file "vmtx"
-                      :depends-on ("package"
-                                   "util"
-                                   "font-loader"
-                                   "vhea"))
-               (:file "glyf"
-                      :depends-on ("package"
-                                   "util"
-                                   "loca"
-                                   "font-loader"))
-               (:file "glyph"
-                      :depends-on ("package"
-                                   "util"
-                                   "font-loader"
-                                   "bounding-box"
-                                   "glyf"
-                                   "kern"
-                                   "loca"))
-               (:file "font-loader-interface"
-                      :depends-on ("package"
-                                   "util"
-                                   "conditions"
-                                   "font-loader"
-                                   "maxp"
-                                   "head"
-                                   "kern"
-                                   "loca"
-                                   "name"
-                                   "cmap"
-                                   "post"
-                                   "hhea"
-                                   "hmtx"
-                                   "vhea"
-                                   "vmtx"))))
-
-
+  :version "2.0.0"
+  :author "Zachary Beane <xach@xach.com>, Arthur Miller and contributors"
+  :description "Access TrueType and OpenType font metrics and outlines from Common Lisp"
+  :license "BSD-2-Clause"
+  :depends-on (#:zpb-otf)
+  :serial t
+  :components ((:module "src"
+                :serial t
+                :components ((:file "package")
+                             (:file "util")
+                             (:file "conditions")
+                             (:file "bounding-box")
+                             (:file "font-loader")
+                             (:file "glyph")
+                             (:file "font-loader-interface")))))
